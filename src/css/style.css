@@ -41,6 +41,11 @@ header {
     padding-top: 150px;
 }
 
+.sidebar li.active a {
+    font-weight: bold;
+    background-color: #555;
+}
+
 .sidebar ul {
     list-style: none;
     padding: 0;
