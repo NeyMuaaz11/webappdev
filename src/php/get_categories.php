@@ -1,9 +1,4 @@
-<?php// Allow requests from any origin
-header("Access-Control-Allow-Origin: *");
-// Allow methods (GET, POST, etc.) from the frontend
-header("Access-Control-Allow-Methods: GET, POST");
-// Allow headers from the frontend
-header("Access-Control-Allow-Headers: Content-Type");
+<?php
 include 'config.php';
 
 $sql = "SELECT * FROM categories";

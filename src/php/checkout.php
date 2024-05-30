@@ -1,9 +1,4 @@
-<?php// Allow requests from any origin
-header("Access-Control-Allow-Origin: *");
-// Allow methods (GET, POST, etc.) from the frontend
-header("Access-Control-Allow-Methods: GET, POST");
-// Allow headers from the frontend
-header("Access-Control-Allow-Headers: Content-Type");
+<?php
 include 'config.php';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -12,7 +7,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $user = json_decode($_POST['user'], true);
 
     $userId = $user['id'];
-    $totalCost = array_reduce($cart, function($sum, $item) {
+    $totalCost = array_reduce($cart, function ($sum, $item) {
         return $sum + ($item['price'] * $item['quantity']);
     }, 0);
 

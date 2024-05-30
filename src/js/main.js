@@ -8,13 +8,17 @@ $(document).ready(function () {
         const username = $('#login-username').val();
         const password = $('#login-password').val();
 
-        $.post('php/login.php', { username, password }, function (data) {
-            const response = JSON.parse(data);
-            if (response.success) {
-                localStorage.setItem('loggedInUser', JSON.stringify(response.user));
-                window.location.href = 'home.html';
-            } else {
-                alert('Invalid username or password.');
+        $.ajax({
+            type: "POST",
+            url: 'http://localhost:8000/php/login.php',
+            data: { username: username, password: password },
+
+            success: function (response) {
+                localStorage.setItem('loggedInUser', response)
+                window.location.href = "home.html"
+            },
+            error: function (response) {
+                alert("Invalid username or password");  // Log any errors to the console
             }
         });
     });
@@ -29,13 +33,17 @@ $(document).ready(function () {
             password: $('#register-password').val()
         };
 
-        $.post('php/register.php', newUser, function (data) {
-            const response = JSON.parse(data);
-            if (response.success) {
-                alert('Registration successful! You can now log in.');
-                window.location.href = 'index.html';
-            } else {
-                alert(response.message);
+        $.ajax({
+            type: "POST",
+            url: 'http://localhost:8000/php/register.php',
+            data: { fullname: newUser.fullname, email: newUser.email, username: newUser.username, password: newUser.password },
+
+            success: function (response) {
+                alert(response);  // Show the response from register.php
+                window.location.href = "index.html"
+            },
+            error: function (xhr, status, error) {
+                alert('Error:', error);  // Log any errors to the console
             }
         });
     });
@@ -43,6 +51,7 @@ $(document).ready(function () {
     // Fetch and display user account info
     if (window.location.pathname.endsWith('account.html')) {
         const user = JSON.parse(localStorage.getItem('loggedInUser'));
+        console.log(user)
         if (user) {
             $('#account-name').text(user.fullname);
             $('#account-email').text(user.email);
@@ -55,11 +64,19 @@ $(document).ready(function () {
 
     // Fetch and display categories
     if (window.location.pathname.endsWith('categories.html')) {
-        $.get('php/get_categories.php', function (data) {
-            const categories = JSON.parse(data);
-            categories.forEach(category => {
-                $('.category-list').append(`<a href="category-details.html?category=${category.name}"><li>${category.name}</li></a>`);
-            });
+        $.ajax({
+            type: "GET",
+            url: 'http://localhost:8000/php/get_categories.php',
+
+            success: function (response) {
+                const categories = JSON.parse(response)
+                categories.forEach(category => {
+                    $('.category-list').append(`<a href="category-details.html?category=${category.name}"><li>${category.name}</li></a>`);
+                });
+            },
+            error: function (xhr, status, error) {
+                alert('Error:', error);  // Log any errors to the console
+            }
         });
     }
 
@@ -68,21 +85,32 @@ $(document).ready(function () {
         const params = new URLSearchParams(window.location.search);
         const categoryName = params.get('category');
 
-        $.get('php/get_category_items.php', { category: categoryName }, function (data) {
-            const category = JSON.parse(data);
-            if (category) {
-                $('#category-title').text(category.name);
-                category.items.forEach(item => {
-                    $('.category-items').append(`
+        $.ajax({
+            type: "GET",
+            url: 'http://localhost:8000/php/get_category_items.php',
+            data: { category: categoryName },
+
+            success: function (response) {
+                const items = JSON.parse(response);
+                if (items) {
+                    $('#category-title').text(categoryName);
+                    items.forEach(item => {
+                        $('.category-items').append(`
                         <div class="category-item">
                             <h3>${item.name}</h3>
                             <p>Price: $${item.price}</p>
+                            <p>Uploaded by: ${item.fullname}</p>
                             <button class="add-to-cart-button" data-id="${item.id}" data-name="${item.name}" data-price="${item.price}">Add to Cart</button>
                         </div>
                     `);
-                });
+                    });
+                }
+            },
+            error: function (xhr, status, error) {
+                alert("No items in this category!");  // Log any errors to the console
             }
         });
+
     }
 
     // Add item to cart
@@ -139,6 +167,26 @@ $(document).ready(function () {
         window.location.href = 'index.html';
     });
 
+    $('#add-category-form').on('submit', function (event) {
+        event.preventDefault();
+
+        const name = $('#category-name').val();
+
+        $.ajax({
+            type: "POST",
+            url: 'http://localhost:8000/php/add-category.php',
+            data: { name: name },
+
+            success: function (response) {
+                alert(response);
+                window.location.href = 'home.html';
+            },
+            error: function (xhr, status, error) {
+                alert('Error:', error);  // Log any errors to the console
+            }
+        });
+    });
+
     $('#add-product-form').on('submit', function (event) {
         event.preventDefault();
 
@@ -146,24 +194,37 @@ $(document).ready(function () {
         const productPrice = $('#product-price').val();
         const productCategory = $('#product-category').val();
 
-        $.post('php/add-product.php', {
-            name: productName,
-            price: productPrice,
-            category_id: productCategory
-        }, function (response) {
-            alert(response);
-            window.location.href = 'home.html';
+        $.ajax({
+            type: "POST",
+            url: 'http://localhost:8000/php/add-product.php',
+            data: { name: productName, price: productPrice, category_id: productCategory, user_id: JSON.parse(localStorage.getItem('loggedInUser')).id },
+
+            success: function (response) {
+                alert(response);
+                window.location.href = 'home.html';
+            },
+            error: function (xhr, status, error) {
+                alert('Error:', error);  // Log any errors to the console
+            }
         });
     });
 
     if (window.location.pathname.endsWith('add-product.html')) {
         // Fetch categories and populate the select element
-        $.get('../php/fetch-categories.php', function (data) {
-            const categories = JSON.parse(data);
-            const categorySelect = $('#product-category');
-            categories.forEach(category => {
-                categorySelect.append(`<option value="${category.id}">${category.name}</option>`);
-            });
+        $.ajax({
+            type: "GET",
+            url: 'http://localhost:8000/php/get_categories.php',
+
+            success: function (response) {
+                const categories = JSON.parse(response);
+                const categorySelect = $('#product-category');
+                categories.forEach(category => {
+                    categorySelect.append(`<option value="${category.id}">${category.name}</option>`);
+                });
+            },
+            error: function (xhr, status, error) {
+                alert('Error:', error);  // Log any errors to the console
+            }
         });
     }
 
@@ -179,14 +240,18 @@ $(document).ready(function () {
 
         const user = JSON.parse(localStorage.getItem('loggedInUser'));
 
-        $.post('php/checkout.php', { cart: JSON.stringify(cart), order: JSON.stringify(orderData), user: JSON.stringify(user) }, function (data) {
-            const response = JSON.parse(data);
-            if (response.success) {
+        $.ajax({
+            type: "POST",
+            data: { cart: JSON.stringify(cart), order: JSON.stringify(orderData), user: JSON.stringify(user) },
+            url: 'http://localhost:8000/php/checkout.php',
+
+            success: function (response) {
                 alert('Order placed successfully!');
                 cart = [];
                 localStorage.setItem('cart', JSON.stringify(cart));
                 window.location.href = 'home.html';
-            } else {
+            },
+            error: function (xhr, status, error) {
                 alert('Failed to place order.');
             }
         });

@@ -1,12 +1,7 @@
-<?php// Allow requests from any origin
-header("Access-Control-Allow-Origin: *");
-// Allow methods (GET, POST, etc.) from the frontend
-header("Access-Control-Allow-Methods: GET, POST");
-// Allow headers from the frontend
-header("Access-Control-Allow-Headers: Content-Type");
+<?php
 $servername = "localhost";
-$username = "root";
-$password = "";
+$username = "new_user";
+$password = "password";
 $dbname = "marketplace";
 
 $conn = new mysqli($servername, $username, $password, $dbname);
