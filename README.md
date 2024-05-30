@@ -9,3 +9,5 @@ everything in main.js
 -> functionality for checkout
 
 -> for next phase, add everything into db, plus add functionality to create new categories and items, store everything directly in db
+
+phase 5: add php and mysql db
