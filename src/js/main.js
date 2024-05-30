@@ -1,83 +1,46 @@
 $(document).ready(function () {
-    // Dummy user data
-    const users = [
-        { username: 'testuser', password: 'password', fullname: 'Test User', email: 'test@uni.de', address: 'college Ring', phone: '+111111232323232' }
-    ];
-
-    // Dummy categories data
-    const categories = [
-        {
-            name: 'Electronics', items: [
-                { name: 'Smartphone', price: 699 },
-                { name: 'Laptop', price: 999 },
-                { name: 'Headphones', price: 199 }
-            ]
-        },
-        {
-            name: 'Clothing', items: [
-                { name: 'T-Shirt', price: 19 },
-                { name: 'Jeans', price: 49 },
-                { name: 'Jacket', price: 89 }
-            ]
-        },
-        {
-            name: 'Furniture', items: [
-                { name: 'Sofa', price: 499 },
-                { name: 'Dining Table', price: 299 },
-                { name: 'Chair', price: 79 }
-            ]
-        },
-        {
-            name: 'Books', items: [
-                { name: 'Fiction Novel', price: 14 },
-                { name: 'Science Book', price: 29 },
-                { name: 'History Book', price: 24 }
-            ]
-        },
-        {
-            name: '& Fitness', items: [
-                { name: 'Dumbbells', price: 39 },
-                { name: 'Yoga Mat', price: 19 },
-                { name: 'Running Shoes', price: 69 }
-            ]
-        }
-    ];
-
     // Initialize cart
     let cart = JSON.parse(localStorage.getItem('cart')) || [];
 
+    // Login form submission
     $('.login-form').on('submit', function (event) {
         event.preventDefault();
         const username = $('#login-username').val();
         const password = $('#login-password').val();
-        const users = JSON.parse(localStorage.getItem('users'))
-        const user = users.find(u => u.username === username && u.password === password);
 
-        if (user) {
-            localStorage.setItem('loggedInUser', JSON.stringify(user));
-            window.location.href = 'home.html';
-        } else {
-            alert('Invalid username or password.');
-        }
+        $.post('php/login.php', { username, password }, function (data) {
+            const response = JSON.parse(data);
+            if (response.success) {
+                localStorage.setItem('loggedInUser', JSON.stringify(response.user));
+                window.location.href = 'home.html';
+            } else {
+                alert('Invalid username or password.');
+            }
+        });
     });
 
+    // Registration form submission
     $('.register-form').on('submit', function (event) {
         event.preventDefault();
         const newUser = {
             fullname: $('#register-fullname').val(),
             email: $('#register-email').val(),
             username: $('#register-username').val(),
-            password: $('#register-password').val(),
-            address: '',
-            phone: ''
+            password: $('#register-password').val()
         };
-        users.push(newUser);
-        localStorage.setItem('users', JSON.stringify(users));
 
-        alert('Registration successful! You can now log in.');
-        window.location.href = 'index.html';
+        $.post('php/register.php', newUser, function (data) {
+            const response = JSON.parse(data);
+            if (response.success) {
+                alert('Registration successful! You can now log in.');
+                window.location.href = 'index.html';
+            } else {
+                alert(response.message);
+            }
+        });
     });
 
+    // Fetch and display user account info
     if (window.location.pathname.endsWith('account.html')) {
         const user = JSON.parse(localStorage.getItem('loggedInUser'));
         if (user) {
@@ -90,46 +53,56 @@ $(document).ready(function () {
         }
     }
 
+    // Fetch and display categories
     if (window.location.pathname.endsWith('categories.html')) {
-        categories.forEach(category => {
-            $('.category-list').append(`<a href="category-details.html?category=${category.name}"><li>${category.name}</li></a>`);
+        $.get('php/get_categories.php', function (data) {
+            const categories = JSON.parse(data);
+            categories.forEach(category => {
+                $('.category-list').append(`<a href="category-details.html?category=${category.name}"><li>${category.name}</li></a>`);
+            });
         });
     }
 
+    // Fetch and display category details
     if (window.location.pathname.endsWith('category-details.html')) {
         const params = new URLSearchParams(window.location.search);
         const categoryName = params.get('category');
-        const category = categories.find(cat => cat.name === categoryName);
 
-        if (category) {
-            $('#category-title').text(categoryName);
-            category.items.forEach(item => {
-                $('.category-items').append(`
-                    <div class="category-item">
-                        <h3>${item.name}</h3>
-                        <p>Price: $${item.price}</p>
-                        <button class="add-to-cart-button" data-name="${item.name}" data-price="${item.price}">Add to Cart</button>
-                    </div>
-                `);
-            });
-        }
+        $.get('php/get_category_items.php', { category: categoryName }, function (data) {
+            const category = JSON.parse(data);
+            if (category) {
+                $('#category-title').text(category.name);
+                category.items.forEach(item => {
+                    $('.category-items').append(`
+                        <div class="category-item">
+                            <h3>${item.name}</h3>
+                            <p>Price: $${item.price}</p>
+                            <button class="add-to-cart-button" data-id="${item.id}" data-name="${item.name}" data-price="${item.price}">Add to Cart</button>
+                        </div>
+                    `);
+                });
+            }
+        });
     }
 
+    // Add item to cart
     $(document).on('click', '.add-to-cart-button', function () {
+        const itemId = $(this).data('id');
         const itemName = $(this).data('name');
         const itemPrice = $(this).data('price');
-        const item = cart.find(i => i.name === itemName);
+        const item = cart.find(i => i.id === itemId);
 
         if (item) {
             item.quantity++;
         } else {
-            cart.push({ name: itemName, price: itemPrice, quantity: 1 });
+            cart.push({ id: itemId, name: itemName, price: itemPrice, quantity: 1 });
         }
 
         localStorage.setItem('cart', JSON.stringify(cart));
         alert(`${itemName} has been added to your cart.`);
     });
 
+    // Display cart items
     if (window.location.pathname.endsWith('cart.html')) {
         let totalItems = 0;
         let totalCost = 0;
@@ -142,27 +115,60 @@ $(document).ready(function () {
                     <h3>${item.name}</h3>
                     <p>Price: $${item.price}</p>
                     <p>Quantity: ${item.quantity}</p>
-                    <button class="remove-button" data-name="${item.name}">Remove</button>
+                    <button class="remove-button" data-id="${item.id}">Remove</button>
                 </div>
             `);
         });
 
         $('#total-items').text(totalItems);
-        $('#total-cost').text(totalCost);
+        $('#total-cost').text(totalCost.toFixed(2));
     }
 
+    // Remove item from cart
     $(document).on('click', '.remove-button', function () {
-        const itemName = $(this).data('name');
-        cart = cart.filter(item => item.name !== itemName);
+        const itemId = $(this).data('id');
+        cart = cart.filter(item => item.id !== itemId);
         localStorage.setItem('cart', JSON.stringify(cart));
         window.location.reload();
     });
 
+    // Logout
     $('.logout-button button').on('click', function () {
         localStorage.removeItem('loggedInUser');
         localStorage.removeItem('cart');
+        window.location.href = 'index.html';
     });
 
+    $('#add-product-form').on('submit', function (event) {
+        event.preventDefault();
+
+        const productName = $('#product-name').val();
+        const productPrice = $('#product-price').val();
+        const productCategory = $('#product-category').val();
+
+        $.post('php/add-product.php', {
+            name: productName,
+            price: productPrice,
+            category_id: productCategory
+        }, function (response) {
+            alert(response);
+            window.location.href = 'home.html';
+        });
+    });
+
+    if (window.location.pathname.endsWith('add-product.html')) {
+        // Fetch categories and populate the select element
+        $.get('../php/fetch-categories.php', function (data) {
+            const categories = JSON.parse(data);
+            const categorySelect = $('#product-category');
+            categories.forEach(category => {
+                categorySelect.append(`<option value="${category.id}">${category.name}</option>`);
+            });
+        });
+    }
+
+
+    // Checkout form submission
     $('#checkout-form').submit(function (e) {
         e.preventDefault();
         const formData = $(this).serializeArray();
@@ -171,39 +177,45 @@ $(document).ready(function () {
             orderData[field.name] = field.value;
         });
 
-        alert('Order placed successfully!');
+        const user = JSON.parse(localStorage.getItem('loggedInUser'));
 
-        cart = [];
-        localStorage.setItem('cart', JSON.stringify(cart));
-        updateCartDisplay();
-
-        window.location.href = 'home.html';
-        console.log('After redirection');
+        $.post('php/checkout.php', { cart: JSON.stringify(cart), order: JSON.stringify(orderData), user: JSON.stringify(user) }, function (data) {
+            const response = JSON.parse(data);
+            if (response.success) {
+                alert('Order placed successfully!');
+                cart = [];
+                localStorage.setItem('cart', JSON.stringify(cart));
+                window.location.href = 'home.html';
+            } else {
+                alert('Failed to place order.');
+            }
+        });
     });
+
+    // Update cart display function
+    function updateCartDisplay() {
+        $('.cart-items').empty();
+        let totalItems = 0;
+        let totalCost = 0;
+
+        cart.forEach(item => {
+            $('.cart-items').append(`
+                <div class="cart-item">
+                    <h3>${item.name}</h3>
+                    <p>Price: $${item.price}</p>
+                    <p>Quantity: ${item.quantity}</p>
+                    <button class="remove-button" data-id="${item.id}">Remove</button>
+                </div>
+            `);
+            totalItems += item.quantity;
+            totalCost += item.price * item.quantity;
+        });
+
+        $('#total-items').text(totalItems);
+        $('#total-cost').text(totalCost.toFixed(2));
+    }
 
     if ($('.cart-items').length) {
         updateCartDisplay();
     }
 });
-
-function updateCartDisplay() {
-    $('.cart-items').empty();
-    let totalItems = 0;
-    let totalCost = 0;
-
-    cart.forEach(item => {
-        $('.cart-items').append(`
-            <div class="cart-item">
-                <h3>${item.name}</h3>
-                <p>Price: $${item.price}</p>
-                <p>Quantity: ${item.quantity}</p>
-                <button class="remove-button" data-name="${item.name}">Remove</button>
-            </div>
-        `);
-        totalItems += item.quantity;
-        totalCost += item.price * item.quantity;
-    });
-
-    $('#total-items').text(totalItems);
-    $('#total-cost').text(totalCost.toFixed(2));
-}
