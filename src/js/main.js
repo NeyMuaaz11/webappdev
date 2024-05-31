@@ -18,7 +18,7 @@ $(document).ready(function () {
                 window.location.href = "home.html"
             },
             error: function (response) {
-                alert("Invalid username or password");  // Log any errors to the console
+                alert("Invalid username or password");
             }
         });
     });
@@ -39,11 +39,11 @@ $(document).ready(function () {
             data: { fullname: newUser.fullname, email: newUser.email, username: newUser.username, password: newUser.password },
 
             success: function (response) {
-                alert(response);  // Show the response from register.php
+                alert(response);
                 window.location.href = "index.html"
             },
             error: function (xhr, status, error) {
-                alert('Error:', error);  // Log any errors to the console
+                alert('Error:', error);
             }
         });
     });
@@ -51,14 +51,55 @@ $(document).ready(function () {
     // Fetch and display user account info
     if (window.location.pathname.endsWith('account.html')) {
         const user = JSON.parse(localStorage.getItem('loggedInUser'));
-        console.log(user)
         if (user) {
             $('#account-name').text(user.fullname);
             $('#account-email').text(user.email);
-            $('#account-address').text(user.address);
-            $('#account-phone').text(user.phone);
+
+            $.ajax({
+                type: "GET",
+                url: 'http://localhost:8000/php/get-users-items.php',
+                data: { userId: user.id },
+
+                success: function (response) {
+                    const items = JSON.parse(response);
+                    $('#total-items-uploaded').text(items.length);
+                    if (items.length > 0) {
+                        items.forEach(item => {
+                            $('#uploaded-items').append(`
+                            <div class="cart-item">
+                                <h3>${item.name}</h3>
+                                <p>Price: $${item.price}</p>
+                            </div>
+                        `);
+                        });
+                    } else {
+                        $('#uploaded-items').text('No items uploaded.');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    alert('Error:', error);
+                }
+            });
+
+
+            // Fetch and display user's uploaded items
+            $.post('php/get_user_items.php', { userId: user.id }, function (data) {
+                const items = JSON.parse(data);
+                if (items.length > 0) {
+                    items.forEach(item => {
+                        $('#uploaded-items').append(`
+                            <div class="uploaded-item">
+                                <h3>${item.name}</h3>
+                                <p>Price: $${item.price}</p>
+                            </div>
+                        `);
+                    });
+                } else {
+                    $('#uploaded-items').text('No items uploaded.');
+                }
+            });
         } else {
-            window.location.href = 'index.html';
+            window.location.href = 'home.html';
         }
     }
 
@@ -75,7 +116,7 @@ $(document).ready(function () {
                 });
             },
             error: function (xhr, status, error) {
-                alert('Error:', error);  // Log any errors to the console
+                alert('Error:', error);
             }
         });
     }
@@ -96,7 +137,7 @@ $(document).ready(function () {
                     $('#category-title').text(categoryName);
                     items.forEach(item => {
                         $('.category-items').append(`
-                        <div class="category-item">
+                        <div class="cart-item">
                             <h3>${item.name}</h3>
                             <p>Price: $${item.price}</p>
                             <p>Uploaded by: ${item.fullname}</p>
@@ -107,11 +148,66 @@ $(document).ready(function () {
                 }
             },
             error: function (xhr, status, error) {
-                alert("No items in this category!");  // Log any errors to the console
+                alert("No items in this category!");
             }
         });
 
     }
+
+    // Fetch and display products
+    function fetchProducts(filterCategory = '') {
+        $.ajax({
+            type: "GET",
+            url: 'http://localhost:8000/php/get-all-products.php',
+            success: function (response) {
+                const products = JSON.parse(response);
+                $('#products-container').empty();
+
+                const filteredProducts = filterCategory ? products.filter(product => product.category_name === filterCategory) : products;
+
+                if (filteredProducts.length > 0) {
+                    filteredProducts.forEach(product => {
+                        $('#products-container').append(`
+                    <div class="cart-item">
+                        <h3>${product.product_name}</h3>
+                        <p>Price: $${product.price}</p>
+                        <p>Uploaded by: ${product.uploaded_by}</p>
+                        <p>Category: ${product.category_name}</p>
+                        <button class="add-to-cart-button" data-id="${product.id}" data-name="${product.product_name}" data-price="${product.price}">Add to Cart</button>
+                    </div>
+                `);
+                    });
+                } else {
+                    $('#products-container').text('No products found.');
+                }
+            },
+            error: function (xhr, status, error) {
+                alert("No items in this category!");
+            }
+        });
+    }
+
+    fetchProducts();
+
+    // Filter products by category
+    $('#product-category').on('change', function () {
+        const selectedCategory = $(this).val();
+
+        $.ajax({
+            type: "GET",
+            url: 'http://localhost:8000/php/get_category_name_by_id.php',
+            data: { id: selectedCategory },
+            success: function (response) {
+                const name = JSON.parse(response)
+                fetchProducts(name.name);
+            },
+            error: function (xhr, status, error) {
+                alert("No items in this category!");
+            }
+        })
+    });
+
+
 
     // Add item to cart
     $(document).on('click', '.add-to-cart-button', function () {
@@ -182,7 +278,7 @@ $(document).ready(function () {
                 window.location.href = 'home.html';
             },
             error: function (xhr, status, error) {
-                alert('Error:', error);  // Log any errors to the console
+                alert('Error:', error);
             }
         });
     });
@@ -204,12 +300,12 @@ $(document).ready(function () {
                 window.location.href = 'home.html';
             },
             error: function (xhr, status, error) {
-                alert('Error:', error);  // Log any errors to the console
+                alert('Error:', error);
             }
         });
     });
 
-    if (window.location.pathname.endsWith('add-product.html')) {
+    if (window.location.pathname.endsWith('add-product.html') || window.location.pathname.endsWith('products.html')) {
         // Fetch categories and populate the select element
         $.ajax({
             type: "GET",
@@ -223,7 +319,7 @@ $(document).ready(function () {
                 });
             },
             error: function (xhr, status, error) {
-                alert('Error:', error);  // Log any errors to the console
+                alert('Error:', error);
             }
         });
     }

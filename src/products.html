@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Constructor Marketplace - Home</title>
+    <title>Constructor Marketplace - Products</title>
     <link rel="stylesheet" type="text/css" href="css/style.css">
 </head>
 
@@ -17,19 +17,27 @@
         <div class="main-container">
             <nav class="sidebar">
                 <ul>
-                    <li class="active"><a href="home.html">Home</a></li>
+                    <li><a href="home.html">Home</a></li>
                     <li><a href="account.html">Account</a></li>
                     <li><a href="cart.html">Cart</a></li>
                     <li><a href="categories.html">Categories</a></li>
-                    <li><a href="products.html">Products</a></li>
+                    <li class="active"><a href="products.html">Products</a></li>
                     <li><a href="add-product.html">Add Product</a></li>
                     <li><a href="add-category.html">Add Category</a></li>
                 </ul>
             </nav>
 
             <main>
+                <div class="products-filter">
+                    <label for="category-filter">Filter by Category:</label>
+                    <select id="product-category">
+                        <option value="">All Categories</option>
+                    </select>
+                </div>
+                <div id="products-container" class="products-container">
+                    <!-- Products will be appended here -->
+                </div>
             </main>
-
         </div>
     </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

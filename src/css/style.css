@@ -147,6 +147,28 @@ p {
     text-align: center;
 }
 
+.products-container {
+    max-height: 600px;
+    /* Adjust as necessary */
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin: 20px 0;
+}
+
+.product-item {
+    border-bottom: 1px solid #ddd;
+    padding: 10px;
+}
+
+.product-item:last-child {
+    border-bottom: none;
+}
+
+.products-filter {
+    margin-bottom: 20px;
+}
+
 .cart-item img {
     max-width: 100%;
     height: auto;
